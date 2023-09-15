@@ -35,10 +35,10 @@ def _process_proliferated_data(data: dict):
         if s == "--":
             data[k] = np.nan
             continue
-        if s.replace(".", "", 1).isdigit():
+        try:
             data[k] = float(s)
-        elif s.replace(".", "", 1).replace(",", "", 1).isdigit():
-            data[k] = float(s.replace(",", "", 1))
+        except ValueError:
+            continue
 
 
 if __name__ == "__main__":
