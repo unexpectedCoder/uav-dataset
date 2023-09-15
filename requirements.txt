@@ -4,3 +4,4 @@ seaborn
 pandas
 requests
 beautifulsoup4
+tqdm
