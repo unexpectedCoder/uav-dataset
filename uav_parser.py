@@ -1,11 +1,13 @@
 from bs4 import BeautifulSoup
-from pandas import DataFrame
 from tqdm import trange, tqdm
+from typing import Tuple
+import pandas as pd
 import numpy as np
 import requests
 
 
 def uav_database(pages=99):
+    """Парсит данные с сайта [Drone Catalog](https://drone-catalog.ru/)."""
     url_list = _get_uavs_url(pages)
     data_list = []
     for url in tqdm(url_list, "Парсинг БПЛА", colour="green"):
@@ -21,7 +23,7 @@ def uav_database(pages=99):
         for tab in tables:
             th, p = tab.find_all("th"), tab.find_all("p")
             data_list.append({h.text: p.text for h, p in zip(th, p)})
-    return DataFrame(data_list)
+    return pd.DataFrame(data_list)
 
 
 def _get_uavs_url(pages=99):
@@ -54,25 +56,38 @@ def proliferated_drones():
     soup = BeautifulSoup(page.text, "html.parser")
     details = soup.find_all("div", {"class": "drone-details"})
     data_list = []
-    for d in details:
+    for d in tqdm(details, "Парсинг", colour="yellow"):
         dl = d.find("dl")
         data = {
             dt.text: dd.text
             for dt, dd in zip(dl.find_all("dt"), dl.find_all("dd"))
         }
-        _process_proliferated_data(data)
+        for k in data:
+            data[k] = data[k].split()[0]
         data_list.append(data)
-    return DataFrame(data_list)
+    return pd.DataFrame(data_list)
 
 
-def _process_proliferated_data(data: dict):
-    # Вспомогательная функция
-    for k in data:
-        s: str = data[k].split()[0]
-        if s == "--":
-            data[k] = np.nan
-            continue
-        try:
-            data[k] = float(s)
-        except ValueError:
-            continue
+def postprocess_data(data: pd.DataFrame,
+                     k_del: Tuple[str, ...] = tuple(),
+                     k_num: Tuple[str, ...] = tuple(),
+                     k_str: Tuple[str, ...] = tuple(),
+                     nan_str: Tuple[str, ...] = tuple(),
+                     thousands: str = None):
+    # Удаление ненужного
+    for k in k_del:
+        del data[k]
+    # Обработка числовых данных
+    for k in k_num:
+        for ns in nan_str:
+            data[k].replace(ns, np.nan, inplace=True)
+        if thousands is not None:
+            data[k] = data[k].str.replace(thousands, "").astype(float)
+        if data[k].dtype == "str":
+            data[k] = data[k].str.replace(",", ".").astype(float)
+    # Обработка строковых данных
+    for k in k_str:
+        for ns in nan_str:
+            data[k].replace(ns, "н/д", inplace=True)
+        data[k].fillna("н/д", inplace=True)
+    return data
