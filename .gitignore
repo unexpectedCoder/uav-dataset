@@ -1,3 +1,9 @@
 .*
 !.gitignore
 __*__*
+*.csv
+!dataset_*.csv
+*.tif*
+*.png
+*.jpg
+pics/
