@@ -233,6 +233,7 @@ def hist_countries(data: pd.DataFrame, limit=-1, **kw):
     sns.barplot(
         d,
         x="Количество", y="Страна",
+        color="#3274a1",
         order=countries,
         dodge=False,
         ax=ax
